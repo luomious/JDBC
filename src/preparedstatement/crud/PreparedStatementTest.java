@@ -1,130 +1,92 @@
 package preparedstatement.crud;
 
-import connection.ConnectionTest;
 import org.junit.Test;
+import preparedstatement.crud.bean.Customer;
 import preparedstatement.util.JDBCUtils;
+import statement.crud.User;
 
-import javax.swing.*;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
+import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Properties;
-//p16
-//实现对数据表的增删改查操作
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.util.Scanner;
+
+//使用PreparedStatement替换Statement,解决SQL注入的问题
 public class PreparedStatementTest {
+
     @Test
-    public void testUpdate1() {
-        String sql = "delete from user where id=?";
-        String sql1="insert into user(id,name,sex,age,level) value(5,?,1,13,1)";
-        update(sql1, "小红");
+    public void testLogin() {
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("用户名：");
+        String user = scanner.next();
+        System.out.print("密   码：");
+        String password = scanner.next();
+
+        String sql = "SELECT id,name from user where user=? and sex=? and id=?";
+
+
+        Customer user1 = getInstance(Customer.class, sql, user, password,5);
+        if (user1 != null) {
+            System.out.println("登陆成功");
+
+        } else {
+            System.out.println("用户名或密码错误");
+        }
+
     }
 
 
-    //通用增删改操作
-    public void update(String sql, Object... args) {//sql中有几个占位符与可变形参的长度相同
 
+
+    public <T> T getInstance(Class<T> clazz, String sql, Object... args) {
 
         Connection connection = null;
         PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
             connection = JDBCUtils.getConnection();
-
             ps = connection.prepareStatement(sql);
-            //填充占位符
+
             for (int i = 0; i < args.length; i++) {
                 ps.setObject(i + 1, args[i]);
             }
-            ps.execute();
+
+            rs = ps.executeQuery();
+            //获取结果集的元数据:ResultSetMetadata
+            ResultSetMetaData rsmd = rs.getMetaData();
+            //通过ResultSetMetaData获取结果集的列数
+            int columnCount = rsmd.getColumnCount();
+
+
+            if (rs.next()) {
+                T t = clazz.newInstance();
+
+                //处理结果集一行数据的每一列
+                for (int i = 0; i < columnCount; i++) {
+                    //获取类的列 名
+                    //获取类的别 名
+                    Object columnValue = rs.getObject(i + 1);
+                    //获取每个列的列名,获取类的列名
+                    //获取类的别名getColumnLabel,注意!!!!!!!!!!!!!!!!!!!!!
+                    String columnName = rsmd.getColumnLabel(i + 1);
+                    //给t赋予属性
+                    Field field = clazz.getDeclaredField(columnName);
+                    field.setAccessible(true);
+                    field.set(t, columnValue);//给customer赋予属性
+
+                }
+                return t;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            //资源关闭
-            JDBCUtils.closeResource(connection, ps);
+            JDBCUtils.closeResource(connection, ps, rs);
         }
 
-
+        return null;
 
     }
 
-
-
-
-    @Test
-    public void testUpdate() {
-        Connection connection = null;
-        PreparedStatement ps = null;
-        try {
-            //获取连接
-            connection = JDBCUtils.getConnection();
-            String sql = "update user1 set name=? where id=?";
-            ps = connection.prepareStatement(sql);
-
-            ps.setObject(1, "adc");
-            ps.setObject(2, 2);
-
-            ps.execute();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }finally {
-            JDBCUtils.closeResource(connection, ps);
-        }
-
-
-    }
-
-    //添加数据
-    @Test
-    public void testInsert() throws Exception {
-        Connection connection = null;
-        PreparedStatement ps = null;
-        try {
-            InputStream is = ConnectionTest.class.getClassLoader().getResourceAsStream("jdbc.properties");
-            Properties pros = new Properties();
-            pros.load(is);
-
-            String user = pros.getProperty("user");
-            String password = pros.getProperty("password");
-            String url = pros.getProperty("url");
-            String driverClass = pros.getProperty("driverClass");
-            //2.加载驱动
-            Class.forName(driverClass);
-            //3.获取连接
-            connection = DriverManager.getConnection(url, user, password);
-            System.out.println(connection);
-            //4.获取PreparedStatement实例
-            String sql = "insert into user1(name,email)value(?,?)";//?占位符
-            ps = connection.prepareStatement(sql);
-            //填充占位符
-            ps.setString(1, "e");
-            ps.setString(2, "2134@wqer");
-
-
-            ps.execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (ps != null) {
-                    ps.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 }

@@ -1,11 +1,58 @@
 package preparedstatement.crud.bean;
 
+import java.util.Date;
+
 public class Customer {
     private int id;
     private String name;
     private int sex;
-    int age;
-    int level;
+    private int age;
+    private int level;
+    private int balance;
+    private Date birth;
+
+    public Customer(int id, String name, int sex, Date birth) {
+        this.id = id;
+        this.name = name;
+        this.sex = sex;
+        this.birth = birth;
+    }
+
+    public Date getBirth() {
+        return birth;
+    }
+
+    public void setBirth(Date birth) {
+        this.birth = birth;
+    }
+
+    public void Customer(String name, int sex, Date birth) {
+        this.name = name;
+        this.sex = sex;
+        this.birth = birth;
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", sex=" + sex +
+                ", age=" + age +
+                ", level=" + level +
+                ", balance=" + balance +
+                ", birth=" + birth +
+                '}';
+    }
+
+    public int getBalance() {
+        return balance;
+    }
+
+    public void setBalance(int balance) {
+        this.balance = balance;
+    }
+
 
     public int getAge() {
         return age;
@@ -64,12 +111,4 @@ public class Customer {
         this.sex = sex;
     }
 
-    @Override
-    public String toString() {
-        return "Customer{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", sex=" + sex +
-                '}';
-    }
 }
